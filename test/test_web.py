@@ -62,6 +62,18 @@ class TestWeb(web.Helper):
             "message": "Not found",
             "__type": "Not Found Error"}}
 
+    patch_data_access_levels = dict(
+        valid_access_levels=[("L1", "L1"), ("L2", "L2"),("L3", "L3"), ("L4", "L4")],
+        valid_user_levels_for_project_task_level=dict(
+            L1=[], L2=["L1"], L3=["L1", "L2"], L4=["L1", "L2", "L3"]),
+        valid_project_task_levels_for_user_level=dict(
+            L1=["L2", "L3", "L4"], L2=["L3", "L4"], L3=["L4"], L4=[]),
+        valid_project_levels_for_task_level=dict(
+            L1=["L1"], L2=["L1", "L2"], L3=["L1", "L2", "L3"], L4=["L1", "L2", "L3", "L4"]),
+        valid_task_levels_for_project_level=dict(
+            L1=["L1", "L2", "L3", "L4"], L2=["L2", "L3", "L4"], L3=["L3", "L4"], L4=["L4"])
+    )
+
     def clear_temp_container(self, user_id):
         """Helper function which deletes all files in temp folder of a given owner_id"""
         temp_folder = os.path.join('/tmp', 'user_%d' % user_id)
@@ -8746,9 +8758,8 @@ class TestWeb(web.Helper):
 
         project.info['data_access'] = ["L1"]
         user_access = dict(select_users=["L2"])
-        private_instance_params = dict(data_access=[("L1", "L1")],
-            default_levels=dict(L1=["L2", "L3", "L4"]))
-        with patch.object(core, 'private_instance_params', private_instance_params):
+
+        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
             res = self.app.post(u'/project/{}/assign-users'.format(project.short_name),
                  data=json.dumps(user_access), content_type='application/json', follow_redirects=True)
             data = json.loads(res.data)
@@ -8759,7 +8770,7 @@ class TestWeb(web.Helper):
         user = User.query.first()
         user.info['data_access'] = ["L1"]
         user_access = dict(select_users=["L1"])
-        with patch.object(core, 'private_instance_params', private_instance_params):
+        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
             res = self.app.post(u'/project/{}/assign-users'.format(project.short_name),
                  data=json.dumps(user_access), content_type='application/json', follow_redirects=True)
             data = json.loads(res.data)

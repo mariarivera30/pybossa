@@ -36,6 +36,18 @@ result_repo = ResultRepository(db)
 
 class TestProjectAPI(TestAPI):
 
+    patch_data_access_levels = dict(
+        valid_access_levels=[("L1", "L1"), ("L2", "L2"),("L3", "L3"), ("L4", "L4")],
+        valid_user_levels_for_project_task_level=dict(
+            L1=[], L2=["L1"], L3=["L1", "L2"], L4=["L1", "L2", "L3"]),
+        valid_project_task_levels_for_user_level=dict(
+            L1=["L2", "L3", "L4"], L2=["L3", "L4"], L3=["L4"], L4=[]),
+        valid_project_levels_for_task_level=dict(
+            L1=["L1"], L2=["L1", "L2"], L3=["L1", "L2", "L3"], L4=["L1", "L2", "L3", "L4"]),
+        valid_task_levels_for_project_level=dict(
+            L1=["L1", "L2", "L3", "L4"], L2=["L2", "L3", "L4"], L3=["L3", "L4"], L4=["L4"])
+    )
+
     def setUp(self):
         super(TestProjectAPI, self).setUp()
         db.session.query(Project).delete()
@@ -1285,11 +1297,6 @@ class TestProjectAPI(TestAPI):
 
         project_levels = ['L2']
         project_users = [str(users[0].id), str(users[1].id)]
-        private_instance_params = dict(
-            data_access=[("L1", "L1"), ("L2", "L2"),("L3", "L3"), ("L4", "L4")],
-            default_levels=dict(L1=[], L2=["L1"], L3=["L1", "L2"], L4=["L1", "L2", "L3"]),
-            default_user_levels=dict(L1=["L2", "L3", "L4"], L2=["L3", "L4"], L3=["L4"], L4=[]))
-
         CategoryFactory.create()
         name = u'My Project'
         headers = [('Authorization', users[1].api_key)]
@@ -1302,7 +1309,7 @@ class TestProjectAPI(TestAPI):
             info=dict(passwd_hash='hello', data_access=project_levels, project_users=project_users))
         new_project = json.dumps(new_project)
 
-        with patch.object(core, 'private_instance_params', private_instance_params):
+        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
             res = self.app.post('/api/project', headers=headers,
                                 data=new_project)
             data = json.loads(res.data)['info']
@@ -1338,7 +1345,6 @@ class TestProjectAPI(TestAPI):
 
         project_levels = ['BAD']
         project_users = [str(users[0].id), str(users[1].id)]
-        private_instance_params = dict(data_access=[("L1", "L1"), ("L2", "L2")])
 
         name = u'My Project'
         headers = [('Authorization', users[1].api_key)]
@@ -1351,7 +1357,7 @@ class TestProjectAPI(TestAPI):
             info=dict(passwd_hash='hello', data_access=project_levels, project_users=project_users))
         new_project = json.dumps(new_project)
 
-        with patch.object(core, 'private_instance_params', private_instance_params):
+        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
             res = self.app.post('/api/project', headers=headers,
                                 data=new_project, follow_redirects=True)
             error = json.loads(res.data)
@@ -1374,10 +1380,6 @@ class TestProjectAPI(TestAPI):
 
         project_levels = ['L1']
         project_users = [str(users[0].id), str(users[1].id)]
-        private_instance_params = dict(
-            data_access=[("L1", "L1"), ("L2", "L2"),("L3", "L3"), ("L4", "L4")],
-            default_levels=dict(L1=[], L2=["L1"], L3=["L1", "L2"], L4=["L1", "L2", "L3"]),
-            default_user_levels=dict(L1=["L2", "L3", "L4"], L2=["L3", "L4"], L3=["L4"], L4=[]))
 
         CategoryFactory.create()
         name = u'My Project'
@@ -1391,7 +1393,7 @@ class TestProjectAPI(TestAPI):
             info=dict(passwd_hash='hello', data_access=project_levels, project_users=project_users))
         new_project = json.dumps(new_project)
 
-        with patch.object(core, 'private_instance_params', private_instance_params):
+        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
             res = self.app.post('/api/project', headers=headers,
                                 data=new_project, follow_redirects=True)
 

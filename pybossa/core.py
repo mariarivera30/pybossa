@@ -69,7 +69,7 @@ def create_app(run_as_server=True):
         Sentry(app)
     if run_as_server:  # pragma: no cover
         setup_scheduled_jobs(app)
-    setup_private_instance_params(app)
+    setup_access_control_params(app)
     setup_blueprints(app)
     setup_hooks(app)
     setup_error_handlers(app)
@@ -799,12 +799,16 @@ def setup_http_signer(app):
     http_signer = HttpSigner(secret, 'X-Pybossa-Signature')
 
 
-def setup_private_instance_params(app):
-    global private_instance_params
+def setup_access_control_params(app):
+    global data_access_levels
 
-    private_instance_params = dict(data_access=app.config['DATA_ACCESS']) \
-        if app.config.get('DATA_ACCESS') else {}
-    if private_instance_params and app.config.get('DEFAULT_LEVELS'):
-        private_instance_params['default_levels'] = app.config['DEFAULT_LEVELS']
-    if private_instance_params and app.config.get('DEFAULT_USER_LEVELS'):
-        private_instance_params['default_user_levels'] = app.config['DEFAULT_USER_LEVELS']
+    if app.config.get('ENABLE_ACCESS_CONTROL'):
+        data_access_levels = dict(
+            valid_access_levels=app.config['VALID_ACCESS_LEVELS'],
+            valid_user_levels_for_project_task_level=app.config['VALID_USER_LEVELS_FOR_PROJECT_TASK_LEVEL'],
+            valid_project_task_levels_for_user_level=app.config['VALID_PROJECTS_TASKS_LEVELS_FOR_USER_LEVEL'],
+            valid_project_levels_for_task_level=app.config['VALID_PROJECT_LEVELS_FOR_TASK_LEVEL'],
+            valid_task_levels_for_project_level=app.config['VALID_TASK_LEVELS_FOR_PROJECT_LEVEL']
+        )
+    else:
+        data_access_levels = {}

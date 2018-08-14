@@ -575,7 +575,7 @@ def delete(short_name):
 @blueprint.route('/<short_name>/update', methods=['GET', 'POST'])
 @login_required
 def update(short_name):
-    from pybossa.core import private_instance_params
+    from pybossa.core import data_access_levels
 
     sync_enabled = current_app.config.get('SYNC_ENABLED')
     project, owner, ps = project_by_shortname(short_name)
@@ -598,7 +598,7 @@ def update(short_name):
             new_project.allow_anonymous_contributors = fuzzyboolean(form.allow_anonymous_contributors.data)
             new_project.category_id = form.category_id.data
             new_project.email_notif = form.email_notif.data
-            if private_instance_params:
+            if data_access_levels:
                 new_project.info['data_access'] = form.data_access.data
 
         if form.password.data:
@@ -637,7 +637,7 @@ def update(short_name):
         if project.category_id is None:
             project.category_id = categories[0].id
         form.populate_obj(project)
-        if private_instance_params:
+        if data_access_levels:
             form.data_access.data = project.info.get('data_access', [])
 
     if request.method == 'POST':
@@ -702,7 +702,7 @@ def update(short_name):
                     target_url=current_app.config.get('DEFAULT_SYNC_TARGET'),
                     server_url=current_app.config.get('SERVER_URL'),
                     sync_enabled=sync_enabled,
-                    private_instance=bool(private_instance_params))
+                    private_instance=bool(data_access_levels))
     return handle_content_type(response)
 
 
@@ -762,7 +762,7 @@ def details(short_name):
 @blueprint.route('/<short_name>/settings')
 @login_required
 def settings(short_name):
-    from pybossa.core import private_instance_params
+    from pybossa.core import data_access_levels
 
     project, owner, ps = project_by_shortname(short_name)
     title = project_title(project, "Settings")
@@ -782,7 +782,7 @@ def settings(short_name):
                     n_volunteers=ps.n_volunteers,
                     title=title,
                     pro_features=pro,
-                    private_instance=bool(private_instance_params))
+                    private_instance=bool(data_access_levels))
     return handle_content_type(response)
 
 
@@ -2879,11 +2879,11 @@ def notify_redundancy_updates(tasks_not_updated):
 def assign_users(short_name):
     """Assign users to project based on projects data access levels."""
 
-    from pybossa.core import private_instance_params
+    from pybossa.core import data_access_levels
 
     project, owner, ps = project_by_shortname(short_name)
     access_levels = project.info.get('data_access', None)
-    if not private_instance_params or not access_levels:
+    if not data_access_levels or not access_levels:
         flash('Cannot assign users to a project without data access levels', 'warning')
         return redirect_content_type(
             url_for('.settings', short_name=short_name))

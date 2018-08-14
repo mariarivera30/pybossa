@@ -32,7 +32,7 @@ from pybossa.cache.categories import get_all as get_categories
 from pybossa.util import is_reserved_name
 from pybossa.core import auditlog_repo, result_repo, http_signer
 from pybossa.auditlogger import AuditLogger
-from pybossa.util import valid_access_levels, can_assign_user
+from pybossa.data_access import valid_access_levels, can_assign_user
 
 auditlogger = AuditLogger(auditlog_repo, caller='api')
 
@@ -73,13 +73,13 @@ class ProjectAPI(APIBase):
                 new.info[key] = value
 
     def _validate_instance(self, project):
-        from pybossa.core import private_instance_params
         from pybossa.cache.users import get_users_access_levels
+        from pybossa.core import data_access_levels
 
         if project.short_name and is_reserved_name('project', project.short_name):
             msg = "Project short_name is not valid, as it's used by the system."
             raise ValueError(msg)
-        if private_instance_params.get('data_access'):
+        if data_access_levels:
             # ensure project data access levels are correct
             if project.info.get('data_access'):
                 project_levels = project.info['data_access']

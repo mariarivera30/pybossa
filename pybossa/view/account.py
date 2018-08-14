@@ -62,7 +62,7 @@ from pybossa import otp
 import time
 from pybossa.cache.users import get_user_preferences
 from pybossa.sched import release_user_locks
-from pybossa.core import private_instance_params
+from pybossa.core import data_access_levels
 
 blueprint = Blueprint('account', __name__)
 
@@ -354,7 +354,7 @@ def register():
                            email_addr=form.email_addr.data,
                            password=form.password.data,
                            consent=form.consent.data)
-        if private_instance_params:
+        if data_access_levels:
             account['data_access'] = form.data_access.data
         confirm_url = get_email_confirmation_url(account)
         if current_app.config.get('ACCOUNT_CONFIRMATION_DISABLED'):
@@ -448,7 +448,7 @@ def create_account(user_data, project_slugs=None, ldap_disabled=True):
     else:
         if user_data.get('ldap'):
             new_user.ldap = user_data['ldap']
-    if private_instance_params:
+    if data_access_levels:
         new_user.info['data_access'] = user_data.get('data_access', [])
     user_repo.save(new_user)
     if not ldap_disabled:
@@ -540,7 +540,7 @@ def _show_public_profile(user, form, can_update):
                     percentage_tasks_completed=percentage_tasks_completed,
                     form=form,
                     can_update=can_update,
-                    private_instance=bool(private_instance_params))
+                    private_instance=bool(data_access_levels))
 
     return handle_content_type(response)
 
@@ -563,7 +563,7 @@ def _show_own_profile(user, form, can_update):
                     user=user_dict,
                     form=form,
                     can_update=can_update,
-                    private_instance=bool(private_instance_params))
+                    private_instance=bool(data_access_levels))
 
     return handle_content_type(response)
 
@@ -1039,7 +1039,7 @@ def add_metadata(name):
 
     user_pref, metadata = get_user_pref_and_metadata(name, form)
     user.info['metadata'] = metadata
-    if private_instance_params:
+    if data_access_levels:
         user.info['data_access'] = form.data_access.data
     user.user_pref = user_pref
     user_repo.update(user)
