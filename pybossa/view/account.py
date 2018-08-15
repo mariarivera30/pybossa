@@ -1044,6 +1044,7 @@ def add_metadata(name):
     user.user_pref = user_pref
     user_repo.update(user)
     cached_users.delete_user_pref_metadata(user.name)
+    cached_users.delete_user_access_levels_by_id(user.id)
     delete_memoized(get_user_preferences, user.id)
     flash("Input saved successfully", "info")
     return redirect(url_for('account.profile', name=name))

@@ -709,6 +709,8 @@ def update(short_name):
 @blueprint.route('/<short_name>/')
 @login_required
 def details(short_name):
+    from pybossa.core import data_access_levels
+
     project, owner, ps = project_by_shortname(short_name)
     num_available_tasks = n_available_tasks(project.id, current_user.id)
     num_completed_tasks_by_user = n_completed_tasks_by_user(project.id, current_user.id)
@@ -718,13 +720,12 @@ def details(short_name):
     num_remaining_task_runs = cached_projects.n_remaining_task_runs(project.id)
     num_expected_task_runs = cached_projects.n_expected_task_runs(project.id)
 
-    if project.needs_password():
-        redirect_to_password = _check_if_redirect_to_password(project)
-        if redirect_to_password:
-            return redirect_to_password
-    else:
-        ensure_authorized_to('read', project)
+    # all projects require password check
+    redirect_to_password = _check_if_redirect_to_password(project)
+    if redirect_to_password:
+        return redirect_to_password
 
+    ensure_authorized_to('read', project)
     template = '/projects/project.html'
     pro = pro_features()
 
@@ -2902,6 +2903,7 @@ def assign_users(short_name):
                                                                 ps)
     if request.method == 'GET':
         project_users = project.get_project_users()
+        project_users = map(str, project_users)
 
         response = dict(
             template='/projects/assign_users.html',
@@ -2914,12 +2916,13 @@ def assign_users(short_name):
         )
         return handle_content_type(response)
 
-    users = request.form.getlist('select_users')
-    project.set_project_users(users)
+    project_users = request.form.getlist('select_users')
+    project_users = map(int, project_users)
+    project.set_project_users(project_users)
     project_repo.save(project)
     auditlogger.log_event(project, current_user, 'update', 'project.assign_users',
               'N/A', users)
-    if not users:
+    if not project_users:
         msg = gettext('Users unassigned or no user assigned to project')
     else:
         msg = gettext('Users assigned to project')

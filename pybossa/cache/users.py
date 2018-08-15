@@ -470,8 +470,8 @@ def get_users_access_levels(users):
         return []
 
     all(int(u) for u in users)
-    users = ', '.join(users)
-    sql = text('''select id::text, info->'data_access' as data_access from "user"
+    users = ', '.join(map(str, users))
+    sql = text('''select id, info->'data_access' as data_access from "user"
         where id in({})'''.format(users))
     results = session.execute(sql).fetchall()
     return [dict(row) for row in results]
@@ -484,3 +484,7 @@ def get_user_access_levels_by_id(user_id):
         where id=:user_id''')
     row = session.execute(sql, dict(user_id=user_id)).fetchone()
     return row[0] or []
+
+
+def delete_user_access_levels_by_id(user_id):
+    delete_memoized(get_user_access_levels_by_id, user_id)

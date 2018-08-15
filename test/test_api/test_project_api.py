@@ -1296,7 +1296,7 @@ class TestProjectAPI(TestAPI):
         make_subadmin(users[1])
 
         project_levels = ['L2']
-        project_users = [str(users[0].id), str(users[1].id)]
+        project_users = [users[0].id, users[1].id]
         CategoryFactory.create()
         name = u'My Project'
         headers = [('Authorization', users[1].api_key)]
@@ -1324,7 +1324,7 @@ class TestProjectAPI(TestAPI):
             project_id = project.id
 
             new_project_levels = ["L1", "L3"]
-            new_project_users = [str(users[1].id)]
+            new_project_users = [users[1].id]
             data = dict(info=dict(data_access=new_project_levels, project_users=new_project_users))
             new_data = json.dumps(data)
             res = self.app.put('/api/project/%s' % project_id, headers=headers, data=new_data)
@@ -1344,7 +1344,7 @@ class TestProjectAPI(TestAPI):
         make_subadmin(users[1])
 
         project_levels = ['BAD']
-        project_users = [str(users[0].id), str(users[1].id)]
+        project_users = [users[0].id, users[1].id]
 
         name = u'My Project'
         headers = [('Authorization', users[1].api_key)]
@@ -1366,7 +1366,7 @@ class TestProjectAPI(TestAPI):
             assert error['action'] == 'POST', error
             assert error['target'] == 'project', error
             assert error['exception_cls'] == 'ValueError', error
-            message = u'Invalid project levels {}'.format(', '.join(project_levels))
+            message = u'Invalid or missing project data access levels'
             assert error['exception_msg'] == message, error
 
     @with_context
@@ -1379,7 +1379,7 @@ class TestProjectAPI(TestAPI):
         make_subadmin(users[1])
 
         project_levels = ['L1']
-        project_users = [str(users[0].id), str(users[1].id)]
+        project_users = [users[0].id, users[1].id]
 
         CategoryFactory.create()
         name = u'My Project'
@@ -1403,5 +1403,36 @@ class TestProjectAPI(TestAPI):
             assert error['action'] == 'POST', error
             assert error['target'] == 'project', error
             assert error['exception_cls'] == 'ValueError', error
-            message = u'Data access level mismatch. Cannot assign user {} to project'.format(', '.join(project_users))
+            message = u'Data access level mismatch. Cannot assign user {} to project'.format(', '.join(map(str, project_users)))
             assert error['exception_msg'] == message, error
+
+
+    @with_context
+    def test_project_get_works_with_and_without_data_access(self):
+        """Test API project get cannot access project when user is not assigned to the project although user data_access match projects"""
+
+        from pybossa import core
+
+        owner = UserFactory.create(admin=True)
+        user_l1 = UserFactory.create(info=dict(data_access=['L1']))
+        user_l3 = UserFactory.create(info=dict(data_access=['L3']))
+
+        project = ProjectFactory.create(owner=owner, info=dict(data_access=["L1", "L2"]))
+
+        self.set_proj_passwd_cookie(project, user_l1)
+        # without data_access, user should be able to get project
+        res = self.app.get(u'api/project/{}?api_key={}'.format(project.id, user_l1.api_key))
+        assert res.status_code == 200, 'without data access, user should get project with project password'
+
+        # with data_access, user should not be able to get project unless user is assigned to project
+        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
+            res = self.app.get(u'api/project/{}?api_key={}'.format(project.id, user_l1.api_key))
+            assert_equal(res.status, '403 FORBIDDEN', 'without data access, user should get project with project password')
+
+            # assign user to project
+            project.info['project_users'] = [user_l1.id]
+            project_repo.update(project)
+            res = self.app.get(u'api/project/{}?api_key={}'.format(project.id, user_l1.api_key))
+            assert res.status_code == 200, 'user assigned to project should have obtained project'
+            data = json.loads(res.data)
+            assert data['short_name'] == project.short_name

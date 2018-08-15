@@ -112,7 +112,10 @@ class ProjectUpdateForm(ProjectForm):
                                         special=False)])
     if data_access_levels:
         data_access = Select2Field(
-            lazy_gettext('Access Level(s)'), choices=data_access_levels['valid_access_levels'], default=[])
+            lazy_gettext('Access Level(s)'),
+            [validators.Required()],
+            choices=data_access_levels['valid_access_levels'],
+            default=[])
     webhook = TextField(lazy_gettext('Webhook'),
                         [pb_validator.Webhook()])
     sync_enabled = BooleanField(lazy_gettext('Enable Project Syncing'))
@@ -650,7 +653,8 @@ class UserPrefMetadataForm(Form):
         lazy_gettext('Type of user'), [validators.Required()], choices=[], default="")
     if data_access_levels:
         data_access = Select2Field(
-            lazy_gettext('Data Access(s)'), choices=data_access_levels['valid_access_levels'], default="")
+            lazy_gettext('Data Access(s)'), [validators.Required()],
+            choices=data_access_levels['valid_access_levels'], default="")
     review = TextAreaField(
         lazy_gettext('Additional comments'), default="")
 
