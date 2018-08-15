@@ -475,3 +475,12 @@ def get_users_access_levels(users):
         where id in({})'''.format(users))
     results = session.execute(sql).fetchall()
     return [dict(row) for row in results]
+
+
+@memoize(timeout=ONE_DAY)
+def get_user_access_levels_by_id(user_id):
+
+    sql = text('''select info->'data_access' from "user"
+        where id=:user_id''')
+    row = session.execute(sql, dict(user_id=user_id)).fetchone()
+    return row[0] or []

@@ -111,3 +111,26 @@ def get_data_access_db_clause(access_levels):
             levels.add(dlevels)
     sql_clauses = [' info->\'data_access\' @> \'["{}"]\''.format(level) for level in levels]
     return ' OR '.join(sql_clauses)
+
+
+def get_data_access_db_clause_for_task_assignment(user_id):
+
+    from pybossa.core import data_access_levels
+    from pybossa.cache.users import get_user_access_levels_by_id
+
+    if not data_access_levels:
+        return ''
+
+    user_levels = get_user_access_levels_by_id(user_id)
+    if not valid_access_levels(user_levels):
+        raise Exception('Invalid user access level')
+
+    valid_project_task_levels_for_user_level = data_access_levels['valid_project_task_levels_for_user_level']
+    levels = set([level for level in user_levels])
+    for level in user_levels:
+        for dlevels in valid_project_task_levels_for_user_level.get(level):
+            levels.add(dlevels)
+
+    levels = ['\'\"{}\"\''.format(level) for level in levels]
+    sql_clause = ' AND task.info->\'data_access\' @> ANY(ARRAY[{}]::jsonb[]) '.format(', '.join(levels))
+    return sql_clause
