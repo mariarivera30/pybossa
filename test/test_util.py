@@ -1070,14 +1070,20 @@ class TestAccessLevels(Test):
                 util.assert_can_add_task_to_project(task, project)
             project.info['data_access'] = ['A', 'B']
             task.info['data_access'] = 'A'
-            assert util.assert_can_add_task_to_project(task, project)
+            with assert_raises(Exception):
+                util.assert_can_add_task_to_project(task, project)
+            project.info['ext_conf'] = {'data_access': {'tracking_id': '123'}}
+            util.assert_can_add_task_to_project(task, project)
 
     @with_context
     def test_task_save_SufficientPermissions(self):
         with self.enable_access_control(
             valid_project_levels_for_task_level={'A': ['B']},
             valid_task_levels_for_project_level={'A': ['B']}):
-            project = ProjectFactory.create(info={'data_access': ['A']})
+            project = ProjectFactory.create(info={
+                'data_access': ['A'],
+                'ext_conf': {'data_access': {'tracking_id': '123'}}
+            })
             TaskFactory.create(project_id=project.id, info={'data_access': 'A'})
 
     @with_context
@@ -1086,5 +1092,14 @@ class TestAccessLevels(Test):
             valid_project_levels_for_task_level={'A': ['B']},
             valid_task_levels_for_project_level={'B': ['C']}):
             project = ProjectFactory.create(info={'data_access': ['B']})
+            with assert_raises(Exception):
+                TaskFactory.create(project_id=project.id, info={'data_access': 'A'})
+
+    @with_context
+    def test_task_save_MissingTrackingId(self):
+        with self.enable_access_control(
+            valid_project_levels_for_task_level={'A': ['B']},
+            valid_task_levels_for_project_level={'A': ['B']}):
+            project = ProjectFactory.create(info={'data_access': ['A']})
             with assert_raises(Exception):
                 TaskFactory.create(project_id=project.id, info={'data_access': 'A'})
