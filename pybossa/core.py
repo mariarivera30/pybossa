@@ -742,7 +742,7 @@ def setup_upref_mdata(app):
     global upref_mdata_choices
     upref_mdata_choices = dict(languages=[], locations=[],
                                timezones=[], user_types=[])
-    if app_settings.upref_mdata:
+    if app.config.upref_mdata:
         from settings_upref_mdata import (upref_languages, upref_locations,
                 mdata_timezones, mdata_user_types)
         upref_mdata_choices['languages'] = upref_languages()
