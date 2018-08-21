@@ -1054,10 +1054,18 @@ def get_valid_task_levels_for_project(project):
     ])
 
 
-def can_add_task_to_project(task, project):
+@access_controller
+def assert_can_add_task_to_project(task, project):
+    if not project.info.get('ext_conf', {}).get('data_access', {}).get('tracking_id'):
+        raise Exception('Requied Project > Settings > External Configurations are missing.')
     task_levels = get_valid_project_levels_for_task(task)
+    if not task_levels:
+        raise Exception('Task is missing data access level.')
     project_levels = get_valid_task_levels_for_project(project)
-    return bool(task_levels & project_levels)
+    if not project_levels:
+        raise Exception('Project data access levels are not configured.')
+    if not bool(task_levels & project_levels):
+        raise Exception('Invalid or insufficient permission.')
 
 
 def private_instance_levels():

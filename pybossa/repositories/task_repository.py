@@ -31,7 +31,7 @@ from sqlalchemy import text
 from pybossa.cache.task_browse_helpers import get_task_filters
 import json
 from datetime import datetime, timedelta
-from pybossa.util import access_controller, can_add_task_to_project
+from pybossa.util import assert_can_add_task_to_project
 
 
 class TaskRepository(Repository):
@@ -384,22 +384,16 @@ class TaskRepository(Repository):
         if row:
             return row[0]
 
-    @access_controller
-    def _can_add_task_to_project(self, action, element):
-        from pybossa.core import project_repo
-        if isinstance(element, Task) and (action in [self.SAVE_ACTION, self.UPDATE_ACTION]):
-            project = project_repo.get(element.project_id)
-            if not can_add_task_to_project(element, project):
-                # Create custom exception class for access control violations
-                raise Exception('Invalid or insufficient permission')
-
     def _validate_can_be(self, action, element):
         from flask import current_app
+        from pybossa.core import project_repo
         if not isinstance(element, Task) and not isinstance(element, TaskRun):
             name = element.__class__.__name__
             msg = '%s cannot be %s by %s' % (name, action, self.__class__.__name__)
             raise WrongObjectError(msg)
-        self._can_add_task_to_project(action, element)
+        if isinstance(element, Task) and (action in [self.SAVE_ACTION, self.UPDATE_ACTION]):
+            project = project_repo.get(element.project_id)
+            assert_can_add_task_to_project(element, project)
 
     def _delete(self, element):
         self._validate_can_be('deleted', element)

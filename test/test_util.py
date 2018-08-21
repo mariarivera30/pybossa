@@ -1053,21 +1053,24 @@ class TestAccessLevels(Test):
             assert util.get_valid_task_levels_for_project(project) == set(['B', 'C'])
 
     @with_context
-    def test_can_add_task_to_project(self):
+    def test_assert_can_add_task_to_project(self):
         project = ProjectFactory.create(info={})
         task = TaskFactory.create(info={})
         with self.enable_access_control(
             valid_project_levels_for_task_level={'A': ['A']},
             valid_task_levels_for_project_level={'A': ['A']}):
-            assert not util.can_add_task_to_project(task, project)
+            with assert_raises(Exception):
+                util.assert_can_add_task_to_project(task, project)
             project.info['data_access'] = ['A']
-            assert not util.can_add_task_to_project(task, project)
+            with assert_raises(Exception):
+                util.assert_can_add_task_to_project(task, project)
             project.info['data_access'] = []
             task.info['data_access'] = 'A'
-            assert not util.can_add_task_to_project(task, project)
+            with assert_raises(Exception):
+                util.assert_can_add_task_to_project(task, project)
             project.info['data_access'] = ['A', 'B']
             task.info['data_access'] = 'A'
-            assert util.can_add_task_to_project(task, project)
+            assert util.assert_can_add_task_to_project(task, project)
 
     @with_context
     def test_task_save_SufficientPermissions(self):
