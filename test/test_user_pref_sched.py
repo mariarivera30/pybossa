@@ -498,14 +498,14 @@ class TestNTaskAvailable(sched.Helper):
     @with_context
     def test_task_5(self):
 
-        from pybossa import core
+        from pybossa import data_access
 
         owner = UserFactory.create(id=500)
         user = UserFactory.create(id=501, info=dict(data_access=["L1"]))
         patch_data_access_levels = dict(
             valid_access_levels=[("L1", "L1"), ("L2", "L2")],
             valid_user_levels_for_project_task_level=dict(L1=[], L2=["L1"]),
-            valid_project_task_levels_for_user_level=dict(L1=["L2", "L3", "L4"], L2=["L3", "L4"]),
+            valid_task_levels_for_user_level=dict(L1=["L2", "L3", "L4"], L2=["L3", "L4"]),
             valid_project_levels_for_task_level=dict(L1=["L1"], L2=["L1", "L2"]),
             valid_task_levels_for_project_level=dict(L1=["L1", "L2", "L3", "L4"], L2=["L2", "L3", "L4"])
         )
@@ -521,5 +521,5 @@ class TestNTaskAvailable(sched.Helper):
         tasks[2].info['data_access'] = ["L2"]
         task_repo.save(tasks[2])
 
-        with patch.object(core, 'data_access_levels', patch_data_access_levels):
+        with patch.object(data_access, 'data_access_levels', patch_data_access_levels):
             assert n_available_tasks_for_user(project, 501) == 3

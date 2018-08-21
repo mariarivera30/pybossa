@@ -31,7 +31,6 @@ from werkzeug.exceptions import BadRequest, Forbidden
 import random
 from pybossa.cache import users as cached_users
 from flask import current_app
-from pybossa.data_access import get_data_access_db_clause_for_task_assignment
 
 session = db.slave_session
 
@@ -251,6 +250,8 @@ def get_locked_task(project_id, user_id=None, user_ip=None,
     a lock on the task and return the task to the user. If offset is nonzero,
     skip that amount of available tasks before returning to the user.
     """
+    from pybossa.data_access import get_data_access_db_clause_for_task_assignment
+
     allowed_task_levels_clause = get_data_access_db_clause_for_task_assignment(user_id)
     sql = text('''
            SELECT task.id, COUNT(task_run.task_id) AS taskcount, n_answers,
@@ -284,6 +285,8 @@ def get_user_pref_task(project_id, user_id=None, user_ip=None,
     and return the task to the user. If offset is nonzero, skip that amount of
     available tasks before returning to the user.
     """
+    from pybossa.data_access import get_data_access_db_clause_for_task_assignment
+
     user_pref_list = cached_users.get_user_preferences(user_id)
     secondary_order = 'random()' if rand_within_priority else 'id ASC'
     allowed_task_levels_clause = get_data_access_db_clause_for_task_assignment(user_id)

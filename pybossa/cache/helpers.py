@@ -24,7 +24,6 @@ from pybossa.cache import memoize, ONE_HOUR
 from pybossa.cache.projects import n_results, overall_progress
 from pybossa.model.project_stats import ProjectStats
 from pybossa.cache import users as cached_users
-from pybossa.data_access import get_data_access_db_clause_for_task_assignment
 
 session = db.slave_session
 
@@ -167,6 +166,8 @@ def n_available_tasks_for_user(project, user_id=None, user_ip=None):
     submitted by the user and user preference set under user profile.
     """
     from pybossa.sched import Schedulers
+    from pybossa.data_access import get_data_access_db_clause_for_task_assignment
+
     allowed_task_levels_clause = get_data_access_db_clause_for_task_assignment(user_id)
     n_tasks = 0
     if user_id is None or user_id <= 0:

@@ -69,7 +69,6 @@ def create_app(run_as_server=True):
         Sentry(app)
     if run_as_server:  # pragma: no cover
         setup_scheduled_jobs(app)
-    setup_access_control_params(app)
     setup_blueprints(app)
     setup_hooks(app)
     setup_error_handlers(app)
@@ -797,18 +796,3 @@ def setup_http_signer(app):
     from pybossa.http_signer import HttpSigner
     secret = app.config.get('SIGNATURE_SECRET')
     http_signer = HttpSigner(secret, 'X-Pybossa-Signature')
-
-
-def setup_access_control_params(app):
-    global data_access_levels
-
-    if app.config.get('ENABLE_ACCESS_CONTROL'):
-        data_access_levels = dict(
-            valid_access_levels=app.config['VALID_ACCESS_LEVELS'],
-            valid_user_levels_for_project_task_level=app.config['VALID_USER_LEVELS_FOR_PROJECT_TASK_LEVEL'],
-            valid_project_task_levels_for_user_level=app.config['VALID_PROJECTS_TASKS_LEVELS_FOR_USER_LEVEL'],
-            valid_project_levels_for_task_level=app.config['VALID_PROJECT_LEVELS_FOR_TASK_LEVEL'],
-            valid_task_levels_for_project_level=app.config['VALID_TASK_LEVELS_FOR_PROJECT_LEVEL']
-        )
-    else:
-        data_access_levels = {}

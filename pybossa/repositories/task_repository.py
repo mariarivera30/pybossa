@@ -393,7 +393,7 @@ class TaskRepository(Repository):
 
     def _can_add_task_to_project(self, action, element):
         from pybossa.core import project_repo
-        from pybossa.core import data_access_levels
+        from pybossa.data_access import data_access_levels, can_add_task_to_project
 
         if not data_access_levels:
             return
@@ -401,8 +401,8 @@ class TaskRepository(Repository):
         if isinstance(element, Task) and (action in [self.SAVE_ACTION, self.UPDATE_ACTION]):
             project = project_repo.get(element.project_id)
             if not can_add_task_to_project(element, project):
-                # Create custom exception class for access control violations
-                raise Exception('Invalid or insufficient access level')
+                raise Exception('Invalid or insufficient access levels')
+
 
     def _validate_can_be(self, action, element):
         from flask import current_app

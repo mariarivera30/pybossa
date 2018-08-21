@@ -29,7 +29,7 @@ from pybossa.leaderboard.data import get_leaderboard as gl
 from pybossa.leaderboard.jobs import leaderboard as lb
 import json
 from pybossa.util import get_user_pref_db_clause
-from pybossa.data_access import get_data_access_db_clause
+
 
 session = db.slave_session
 
@@ -325,7 +325,7 @@ def delete_user_summary(name):
 
 @memoize(timeout=timeouts.get('APP_TIMEOUT'))
 def get_user_pref_metadata(name):
-    from pybossa.core import data_access_levels
+    from pybossa.data_access import data_access_levels
 
     sql = text("""
     SELECT info->'metadata', user_pref, info->'data_access' FROM "user" WHERE name=:name;
@@ -455,6 +455,8 @@ def get_announcements_cached(user, announcement_levels):
 
 
 def get_users_for_data_access(data_access):
+    from pybossa.data_access import get_data_access_db_clause
+
     clause = get_data_access_db_clause(data_access)
     if not clause:
         return None

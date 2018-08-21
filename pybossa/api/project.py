@@ -32,8 +32,6 @@ from pybossa.cache.categories import get_all as get_categories
 from pybossa.util import is_reserved_name
 from pybossa.core import auditlog_repo, result_repo, http_signer
 from pybossa.auditlogger import AuditLogger
-from pybossa.data_access import valid_access_levels, can_assign_user
-from pybossa.cache.users import get_users_access_levels
 
 auditlogger = AuditLogger(auditlog_repo, caller='api')
 
@@ -74,30 +72,12 @@ class ProjectAPI(APIBase):
                 new.info[key] = value
 
     def _validate_instance(self, project):
-        from pybossa.core import data_access_levels
+        from pybossa.data_access import can_assign_user_to_project_per_access_levels
 
         if project.short_name and is_reserved_name('project', project.short_name):
             msg = "Project short_name is not valid, as it's used by the system."
             raise ValueError(msg)
-        if data_access_levels:
-            # ensure project data access levels are correct
-            if (not project.info.get('data_access') or
-                not valid_access_levels(project.info['data_access'])):
-                    raise ValueError(u'Invalid or missing project data access levels')
-
-            # ensure users assigned to project has project access levels
-            if project.info.get('project_users'):
-                project_levels = project.info['data_access']
-                users = project.info['project_users']
-                users = get_users_access_levels(users)
-                invalid_user_ids = set()
-                for user in users:
-                    user_levels = user.get('data_access', [])
-                    if not can_assign_user(project_levels, user_levels):
-                        invalid_user_ids.add(user['id'])
-                if invalid_user_ids:
-                    raise ValueError(u'Data access level mismatch. Cannot assign user {} to project'
-                        .format(', '.join(map(str, invalid_user_ids))))
+        can_assign_user_to_project_per_access_levels(project)
 
     def _log_changes(self, old_project, new_project):
         auditlogger.add_log_entry(old_project, new_project, current_user)

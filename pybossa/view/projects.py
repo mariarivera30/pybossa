@@ -88,6 +88,8 @@ from pybossa.syncer.project_syncer import ProjectSyncer
 from pybossa.exporter.csv_reports_export import ProjectReportCsvExporter
 from pybossa.util import get_valid_user_preferences
 from datetime import datetime
+from pybossa.data_access import (data_access_levels, set_object_data_access_to_form,
+    set_form_data_access_to_object)
 
 cors_headers = ['Content-Type', 'Authorization']
 
@@ -575,7 +577,6 @@ def delete(short_name):
 @blueprint.route('/<short_name>/update', methods=['GET', 'POST'])
 @login_required
 def update(short_name):
-    from pybossa.core import data_access_levels
 
     sync_enabled = current_app.config.get('SYNC_ENABLED')
     project, owner, ps = project_by_shortname(short_name)
@@ -598,8 +599,7 @@ def update(short_name):
             new_project.allow_anonymous_contributors = fuzzyboolean(form.allow_anonymous_contributors.data)
             new_project.category_id = form.category_id.data
             new_project.email_notif = form.email_notif.data
-            if data_access_levels:
-                new_project.info['data_access'] = form.data_access.data
+            set_form_data_access_to_object(new_project.info, form)
 
         if form.password.data:
             new_project.set_password(form.password.data)
@@ -637,8 +637,7 @@ def update(short_name):
         if project.category_id is None:
             project.category_id = categories[0].id
         form.populate_obj(project)
-        if data_access_levels:
-            form.data_access.data = project.info.get('data_access', [])
+        set_object_data_access_to_form(project.info, form)
 
     if request.method == 'POST':
         upload_form = AvatarUploadForm()
@@ -709,7 +708,6 @@ def update(short_name):
 @blueprint.route('/<short_name>/')
 @login_required
 def details(short_name):
-    from pybossa.core import data_access_levels
 
     project, owner, ps = project_by_shortname(short_name)
     num_available_tasks = n_available_tasks(project.id, current_user.id)
@@ -763,7 +761,6 @@ def details(short_name):
 @blueprint.route('/<short_name>/settings')
 @login_required
 def settings(short_name):
-    from pybossa.core import data_access_levels
 
     project, owner, ps = project_by_shortname(short_name)
     title = project_title(project, "Settings")
@@ -2880,14 +2877,14 @@ def notify_redundancy_updates(tasks_not_updated):
 def assign_users(short_name):
     """Assign users to project based on projects data access levels."""
 
-    from pybossa.core import data_access_levels
+    from pybossa.data_access import data_access_levels
 
     project, owner, ps = project_by_shortname(short_name)
     access_levels = project.info.get('data_access', None)
     if not data_access_levels or not access_levels:
         flash('Cannot assign users to a project without data access levels', 'warning')
         return redirect_content_type(
-            url_for('.settings', short_name=short_name))
+            url_for('.settings', short_name=project.short_name))
 
     users = cached_users.get_users_for_data_access(access_levels)
     if not users:

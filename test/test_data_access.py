@@ -28,7 +28,7 @@ class TestAccessLevels(Test):
         valid_access_levels=[("L1", "L1"), ("L2", "L2"),("L3", "L3"), ("L4", "L4")],
         valid_user_levels_for_project_task_level=dict(
             L1=[], L2=["L1"], L3=["L1", "L2"], L4=["L1", "L2", "L3"]),
-        valid_project_task_levels_for_user_level=dict(
+        valid_task_levels_for_user_level=dict(
             L1=["L2", "L3", "L4"], L2=["L3", "L4"], L3=["L4"], L4=[]),
         valid_project_levels_for_task_level=dict(
             L1=["L1"], L2=["L1", "L2"], L3=["L1", "L2", "L3"], L4=["L1", "L2", "L3", "L4"]),
@@ -37,9 +37,9 @@ class TestAccessLevels(Test):
     )
 
     def test_can_assign_user(self):
-        from pybossa import core
+        from pybossa import data_access
 
-        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
+        with patch.object(data_access, 'data_access_levels', self.patch_data_access_levels):
             proj_levels = ["L3"]
             user_levels = ["L2", "L4"]
             assign_users = data_access_util.can_assign_user(proj_levels, user_levels)
@@ -69,10 +69,10 @@ class TestAccessLevels(Test):
     @with_context
     def test_get_valid_project_levels_for_task(self):
 
-        from pybossa import core
+        from pybossa import data_access
 
         task = TaskFactory.create(info={})
-        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
+        with patch.object(data_access, 'data_access_levels', self.patch_data_access_levels):
             self.patch_data_access_levels['valid_project_levels_for_task_level'] = {'A': ['B']}
             assert data_access_util.get_valid_project_levels_for_task(task) == set()
             task.info['data_access'] = 'A'
@@ -82,9 +82,9 @@ class TestAccessLevels(Test):
     @with_context
     def test_get_valid_task_levels_for_project(self):
 
-        from pybossa import core
+        from pybossa import data_access
 
-        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
+        with patch.object(data_access, 'data_access_levels', self.patch_data_access_levels):
             self.patch_data_access_levels['valid_task_levels_for_project_level'] = {'A': ['B'], 'B': ['C']}
             project = ProjectFactory.create(info={})
             assert data_access_util.get_valid_task_levels_for_project(project) == set()
@@ -95,30 +95,30 @@ class TestAccessLevels(Test):
     @with_context
     def test_can_add_task_to_project(self):
 
-        from pybossa import core
+        from pybossa import data_access
 
         project = ProjectFactory.create(info={})
         task = TaskFactory.create(info={})
-        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
+        with patch.object(data_access, 'data_access_levels', self.patch_data_access_levels):
             self.patch_data_access_levels['valid_project_levels_for_task_level'] = {'A': ['A']}
             self.patch_data_access_levels['valid_task_levels_for_project_level'] = {'A': ['A']}
-            assert not data_access_util.can_add_task_to_project(task, project)
+            assert not data_access.can_add_task_to_project(task, project)
             project.info['data_access'] = ['A']
-            assert not data_access_util.can_add_task_to_project(task, project)
+            assert not data_access.can_add_task_to_project(task, project)
             project.info['data_access'] = []
             task.info['data_access'] = 'A'
-            assert not data_access_util.can_add_task_to_project(task, project)
+            assert not data_access.can_add_task_to_project(task, project)
             project.info['data_access'] = ['A', 'B']
             task.info['data_access'] = 'A'
-            assert data_access_util.can_add_task_to_project(task, project)
+            assert data_access.can_add_task_to_project(task, project)
 
 
     @with_context
-    def test_task_save_SufficientPermissions(self):
+    def test_task_save_sufficient_permissions(self):
 
-        from pybossa import core
+        from pybossa import data_access
 
-        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
+        with patch.object(data_access, 'data_access_levels', self.patch_data_access_levels):
             self.patch_data_access_levels['valid_project_levels_for_task_level'] = {'A': ['B']}
             self.patch_data_access_levels['valid_task_levels_for_project_level'] = {'A': ['B']}
             project = ProjectFactory.create(info={'data_access': ['A']})
@@ -126,11 +126,11 @@ class TestAccessLevels(Test):
 
 
     @with_context
-    def test_task_save_InsufficientPermissions(self):
+    def test_task_save_insufficient_permissions(self):
 
-        from pybossa import core
+        from pybossa import data_access
 
-        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
+        with patch.object(data_access, 'data_access_levels', self.patch_data_access_levels):
             self.patch_data_access_levels['valid_project_levels_for_task_level'] = {'A': ['B']}
             self.patch_data_access_levels['valid_task_levels_for_project_level'] = {'B': ['C']}
             project = ProjectFactory.create(info={'data_access': ['B']})

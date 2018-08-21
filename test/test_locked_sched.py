@@ -41,7 +41,7 @@ class TestLockedSched(sched.Helper):
         valid_access_levels=[("L1", "L1"), ("L2", "L2"),("L3", "L3"), ("L4", "L4")],
         valid_user_levels_for_project_task_level=dict(
             L1=[], L2=["L1"], L3=["L1", "L2"], L4=["L1", "L2", "L3"]),
-        valid_project_task_levels_for_user_level=dict(
+        valid_task_levels_for_user_level=dict(
             L1=["L2", "L3", "L4"], L2=["L3", "L4"], L3=["L4"], L4=[]),
         valid_project_levels_for_task_level=dict(
             L1=["L1"], L2=["L1", "L2"], L3=["L1", "L2", "L3"], L4=["L1", "L2", "L3", "L4"]),
@@ -159,7 +159,7 @@ class TestLockedSched(sched.Helper):
     def test_tasks_assigned_as_per_user_access_levels_l1(self):
         """ Test tasks assigned by locked scheduler are as per access levels set for user, task and project"""
 
-        from pybossa import core
+        from pybossa import data_access
         from test_api import get_pwd_cookie
 
         owner = UserFactory.create(id=500)
@@ -178,7 +178,7 @@ class TestLockedSched(sched.Helper):
         task4 = TaskFactory.create(project=project2, info=dict(question='q4', data_access=["L2"]), n_answers=1)
 
         self.set_proj_passwd_cookie(project, user_l1)
-        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
+        with patch.object(data_access, 'data_access_levels', self.patch_data_access_levels):
             res = self.app.get('api/project/{}/newtask?api_key={}'
                                .format(project.id, user_l1.api_key))
             assert res.status_code == 200, res.status_code
@@ -201,7 +201,7 @@ class TestLockedSched(sched.Helper):
     def test_tasks_assigned_as_per_user_access_levels_l2(self):
         """ Test tasks assigned by locked scheduler are as per access levels set for user, task and project"""
 
-        from pybossa import core
+        from pybossa import data_access
         from test_api import get_pwd_cookie
 
         owner = UserFactory.create(id=500)
@@ -221,7 +221,7 @@ class TestLockedSched(sched.Helper):
         task4 = TaskFactory.create(project=project2, info=dict(question='q4', data_access=["L2"]), n_answers=1)
 
         self.set_proj_passwd_cookie(project, user_l2)
-        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
+        with patch.object(data_access, 'data_access_levels', self.patch_data_access_levels):
             res = self.app.get('api/project/{}/newtask?api_key={}'
                                .format(project.id, user_l2.api_key))
             assert res.status_code == 200, res.status_code
@@ -244,7 +244,7 @@ class TestLockedSched(sched.Helper):
     def test_tasks_assigned_as_per_user_access_levels_l4(self):
         """ Test tasks assigned by locked scheduler are as per access levels set for user, task and project"""
 
-        from pybossa import core
+        from pybossa import data_access
         from test_api import get_pwd_cookie
 
         owner = UserFactory.create(id=500)
@@ -264,7 +264,7 @@ class TestLockedSched(sched.Helper):
         task4 = TaskFactory.create(project=project, info=dict(question='q4', data_access=["L2"]), n_answers=1)
 
         self.set_proj_passwd_cookie(project, user_l4)
-        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
+        with patch.object(data_access, 'data_access_levels', self.patch_data_access_levels):
             res = self.app.get('api/project/{}/newtask?api_key={}'
                                .format(project.id, user_l4.api_key))
             assert res.status_code == 200, res.status_code

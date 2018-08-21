@@ -42,9 +42,10 @@ from pybossa.forms.fields.time_field import TimeField
 from pybossa.forms.fields.select_two import Select2Field
 from pybossa.sched import sched_variants
 from validator import TimeFieldsValidator
-from pybossa.core import enable_strong_password, data_access_levels
+from pybossa.core import enable_strong_password
 from pybossa.util import get_file_path_for_import_csv
 from flask import flash
+import pybossa.data_access as data_access
 
 
 EMAIL_MAX_LENGTH = 254
@@ -110,11 +111,11 @@ class ProjectUpdateForm(ProjectForm):
                         pb_validator.CheckPasswordStrength(
                                         min_len=PROJECT_PWD_MIN_LEN,
                                         special=False)])
-    if data_access_levels:
+    if data_access.data_access_levels:
         data_access = Select2Field(
             lazy_gettext('Access Level(s)'),
             [validators.Required()],
-            choices=data_access_levels['valid_access_levels'],
+            choices=data_access.data_access_levels['valid_access_levels'],
             default=[])
     webhook = TextField(lazy_gettext('Webhook'),
                         [pb_validator.Webhook()])
@@ -651,10 +652,10 @@ class UserPrefMetadataForm(Form):
         choices=[], default="")
     user_type = SelectField(
         lazy_gettext('Type of user'), [validators.Required()], choices=[], default="")
-    if data_access_levels:
+    if data_access.data_access_levels:
         data_access = Select2Field(
             lazy_gettext('Data Access(s)'), [validators.Required()],
-            choices=data_access_levels['valid_access_levels'], default="")
+            choices=data_access.data_access_levels['valid_access_levels'], default="")
     review = TextAreaField(
         lazy_gettext('Additional comments'), default="")
 

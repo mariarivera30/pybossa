@@ -29,6 +29,8 @@ from pybossa.repositories import ProjectRepository
 from pybossa.repositories import TaskRepository
 from pybossa.repositories import ResultRepository
 from pybossa.model.project import Project
+
+
 project_repo = ProjectRepository(db)
 task_repo = TaskRepository(db)
 result_repo = ResultRepository(db)
@@ -40,7 +42,7 @@ class TestProjectAPI(TestAPI):
         valid_access_levels=[("L1", "L1"), ("L2", "L2"),("L3", "L3"), ("L4", "L4")],
         valid_user_levels_for_project_task_level=dict(
             L1=[], L2=["L1"], L3=["L1", "L2"], L4=["L1", "L2", "L3"]),
-        valid_project_task_levels_for_user_level=dict(
+        valid_task_levels_for_user_level=dict(
             L1=["L2", "L3", "L4"], L2=["L3", "L4"], L3=["L4"], L4=[]),
         valid_project_levels_for_task_level=dict(
             L1=["L1"], L2=["L1", "L2"], L3=["L1", "L2", "L3"], L4=["L1", "L2", "L3", "L4"]),
@@ -1290,7 +1292,7 @@ class TestProjectAPI(TestAPI):
     def test_project_can_post_valid_project_levels(self):
         """Test API project create can set correct data access levels"""
 
-        from pybossa import core
+        from pybossa import data_access
 
         users = UserFactory.create_batch(2, info=dict(data_access=['L1']))
         make_subadmin(users[1])
@@ -1309,7 +1311,7 @@ class TestProjectAPI(TestAPI):
             info=dict(passwd_hash='hello', data_access=project_levels, project_users=project_users))
         new_project = json.dumps(new_project)
 
-        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
+        with patch.object(data_access, 'data_access_levels', self.patch_data_access_levels):
             res = self.app.post('/api/project', headers=headers,
                                 data=new_project)
             data = json.loads(res.data)['info']
@@ -1338,7 +1340,7 @@ class TestProjectAPI(TestAPI):
     def test_project_cannot_post_invalid_project_levels(self):
         """Test API project create cannot set invalid data access levels"""
 
-        from pybossa import core
+        from pybossa import data_access
 
         users = UserFactory.create_batch(2, info=dict(data_access=['L1']))
         make_subadmin(users[1])
@@ -1357,7 +1359,7 @@ class TestProjectAPI(TestAPI):
             info=dict(passwd_hash='hello', data_access=project_levels, project_users=project_users))
         new_project = json.dumps(new_project)
 
-        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
+        with patch.object(data_access, 'data_access_levels', self.patch_data_access_levels):
             res = self.app.post('/api/project', headers=headers,
                                 data=new_project, follow_redirects=True)
             error = json.loads(res.data)
@@ -1373,7 +1375,7 @@ class TestProjectAPI(TestAPI):
     def test_project_cannot_assign_users_with_mismatched_access_levels(self):
         """Test API project post cannot set users with data access levels that doesnt match project access levels"""
 
-        from pybossa import core
+        from pybossa import data_access
 
         users = UserFactory.create_batch(2, info=dict(data_access=['L3']))
         make_subadmin(users[1])
@@ -1393,7 +1395,7 @@ class TestProjectAPI(TestAPI):
             info=dict(passwd_hash='hello', data_access=project_levels, project_users=project_users))
         new_project = json.dumps(new_project)
 
-        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
+        with patch.object(data_access, 'data_access_levels', self.patch_data_access_levels):
             res = self.app.post('/api/project', headers=headers,
                                 data=new_project, follow_redirects=True)
 
@@ -1411,7 +1413,7 @@ class TestProjectAPI(TestAPI):
     def test_project_get_works_with_and_without_data_access(self):
         """Test API project get cannot access project when user is not assigned to the project although user data_access match projects"""
 
-        from pybossa import core
+        from pybossa import data_access
 
         owner = UserFactory.create(admin=True)
         user_l1 = UserFactory.create(info=dict(data_access=['L1']))
@@ -1425,7 +1427,7 @@ class TestProjectAPI(TestAPI):
         assert res.status_code == 200, 'without data access, user should get project with project password'
 
         # with data_access, user should not be able to get project unless user is assigned to project
-        with patch.object(core, 'data_access_levels', self.patch_data_access_levels):
+        with patch.object(data_access, 'data_access_levels', self.patch_data_access_levels):
             res = self.app.get(u'api/project/{}?api_key={}'.format(project.id, user_l1.api_key))
             assert_equal(res.status, '403 FORBIDDEN', 'without data access, user should get project with project password')
 

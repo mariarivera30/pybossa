@@ -62,7 +62,8 @@ from pybossa import otp
 import time
 from pybossa.cache.users import get_user_preferences
 from pybossa.sched import release_user_locks
-from pybossa.core import data_access_levels
+from pybossa.data_access import (data_access_levels, set_form_data_access_to_object,
+    copy_data_access_levels)
 
 blueprint = Blueprint('account', __name__)
 
@@ -354,8 +355,7 @@ def register():
                            email_addr=form.email_addr.data,
                            password=form.password.data,
                            consent=form.consent.data)
-        if data_access_levels:
-            account['data_access'] = form.data_access.data
+        set_form_data_access_to_object(account, form)
         confirm_url = get_email_confirmation_url(account)
         if current_app.config.get('ACCOUNT_CONFIRMATION_DISABLED'):
             project_slugs=form.project_slug.data
@@ -448,8 +448,8 @@ def create_account(user_data, project_slugs=None, ldap_disabled=True):
     else:
         if user_data.get('ldap'):
             new_user.ldap = user_data['ldap']
-    if data_access_levels:
-        new_user.info['data_access'] = user_data.get('data_access', [])
+
+    copy_data_access_levels(new_user.info, user_data)
     user_repo.save(new_user)
     if not ldap_disabled:
         flash(gettext('Thanks for signing-up'), 'success')
@@ -1039,8 +1039,7 @@ def add_metadata(name):
 
     user_pref, metadata = get_user_pref_and_metadata(name, form)
     user.info['metadata'] = metadata
-    if data_access_levels:
-        user.info['data_access'] = form.data_access.data
+    set_form_data_access_to_object(user.info, form)
     user.user_pref = user_pref
     user_repo.update(user)
     cached_users.delete_user_pref_metadata(user.name)
