@@ -46,7 +46,7 @@ from pybossa.core import enable_strong_password
 from pybossa.util import get_file_path_for_import_csv
 from flask import flash
 import pybossa.data_access as data_access
-
+import app_settings
 
 EMAIL_MAX_LENGTH = 254
 USER_NAME_MAX_LENGTH = 35
@@ -660,7 +660,7 @@ class UserPrefMetadataForm(Form):
         lazy_gettext('Additional comments'), default="")
 
     def set_upref_mdata_choices(self):
-        from pybossa.core import upref_mdata_choices
+        upref_mdata_choices = app_settings.upref_mdata.get_upref_mdata_choices()
         self.languages.choices = upref_mdata_choices['languages']
         self.locations.choices = upref_mdata_choices['locations']
         self.timezone.choices = upref_mdata_choices['timezones']

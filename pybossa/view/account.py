@@ -62,8 +62,9 @@ from pybossa import otp
 import time
 from pybossa.cache.users import get_user_preferences
 from pybossa.sched import release_user_locks
-from pybossa.data_access import (data_access_levels, set_form_data_access_to_object,
+from pybossa.data_access import (data_access_levels, ensure_data_access_assignment_from_form,
     copy_data_access_levels)
+import app_settings
 
 blueprint = Blueprint('account', __name__)
 
@@ -331,7 +332,7 @@ def register():
     """
     if current_app.config.get('LDAP_HOST', False):
         return abort(404)
-    if not current_app.config.upref_mdata:
+    if not app_settings.upref_mdata:
         form = RegisterForm(request.body)
     else:
         form = RegisterFormWithUserPrefMetadata(request.body)
@@ -341,7 +342,7 @@ def register():
     msg = "I accept receiving emails from %s" % current_app.config.get('BRAND')
     form.consent.label = msg
     if request.method == 'POST' and form.validate():
-        if current_app.config.upref_mdata:
+        if app_settings.upref_mdata:
             user_pref, metadata = get_user_pref_and_metadata(form.name.data, form)
             account = dict(fullname=form.fullname.data, name=form.name.data,
                            email_addr=form.email_addr.data,
@@ -355,7 +356,7 @@ def register():
                            email_addr=form.email_addr.data,
                            password=form.password.data,
                            consent=form.consent.data)
-        set_form_data_access_to_object(account, form)
+        ensure_data_access_assignment_from_form(account, form)
         confirm_url = get_email_confirmation_url(account)
         if current_app.config.get('ACCOUNT_CONFIRMATION_DISABLED'):
             project_slugs=form.project_slug.data
@@ -479,7 +480,7 @@ def redirect_profile():
         return redirect_content_type(url_for('.signin'), status='not_signed_in')
     if (request.headers.get('Content-Type') == 'application/json') and current_user.is_authenticated():
         form = None
-        if current_app.config.upref_mdata:
+        if app_settings.upref_mdata:
             form_data = cached_users.get_user_pref_metadata(current_user.name)
             form = UserPrefMetadataForm(**form_data)
             form.set_upref_mdata_choices()
@@ -502,7 +503,7 @@ def profile(name):
         raise abort(404)
 
     form = None
-    if current_app.config.upref_mdata:
+    if app_settings.upref_mdata:
         form_data = cached_users.get_user_pref_metadata(user.name)
         form = UserPrefMetadataForm(**form_data)
         form.set_upref_mdata_choices()
@@ -1039,7 +1040,7 @@ def add_metadata(name):
 
     user_pref, metadata = get_user_pref_and_metadata(name, form)
     user.info['metadata'] = metadata
-    set_form_data_access_to_object(user.info, form)
+    ensure_data_access_assignment_from_form(user.info, form)
     user.user_pref = user_pref
     user_repo.update(user)
     cached_users.delete_user_pref_metadata(user.name)

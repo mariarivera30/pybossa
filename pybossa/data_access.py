@@ -16,9 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with PYBOSSA.  If not, see <http://www.gnu.org/licenses/>.
 """Module with data access helper functions."""
-
 import app_settings
-
 
 def get_valid_project_levels_for_task(task):
 
@@ -40,23 +38,11 @@ def get_valid_task_levels_for_project(project):
         for level in data_access_levels['valid_task_levels_for_project_level'].get(apl, [])
     ])
 
-
-def can_add_task_to_project(task, project):
-
-    if not data_access_levels:
-        return
-
-    task_levels = get_valid_project_levels_for_task(task)
-    project_levels = get_valid_task_levels_for_project(project)
-    return bool(task_levels & project_levels)
-
-
 def valid_access_levels(levels):
     """check if levels are valid levels"""
 
     access_levels = data_access_levels['valid_access_levels']
     access_levels = [level[0] for level in access_levels]
-    #return [l for l in levels if l in access_levels] == levels
     return all(l in access_levels for l in levels)
 
 
@@ -128,59 +114,53 @@ def get_data_access_db_clause_for_task_assignment(user_id):
     return sql_clause
 
 
-def set_object_data_access_to_form(object, form):
+def access_controller(func):
+    def wrapper(*args, **kwargs):
+        if data_access_levels:
+            return func(*args, **kwargs)
+    return wrapper
 
-    if not data_access_levels:
-        return
-
+@access_controller
+def ensure_data_access_assignment_to_form(object, form):
     access_levels = object.get('data_access', [])
     if not valid_access_levels(access_levels):
         raise Exception('Invalid access levels')
     form.data_access.data = access_levels
 
 
-def set_form_data_access_to_object(object, form):
-
-    if not data_access_levels:
-        return
-
+@access_controller
+def ensure_data_access_assignment_from_form(object, form):
     access_levels = form.data_access.data
     if not valid_access_levels(access_levels):
         raise Exception('Invalid access levels')
     object['data_access'] = access_levels
 
 
-def copy_data_access_levels(target, source):
+@access_controller
+def can_add_task_to_project(task, project):
+    task_levels = get_valid_project_levels_for_task(task)
+    project_levels = get_valid_task_levels_for_project(project)
+    return bool(task_levels & project_levels)
 
-    if not data_access_levels:
-        return
 
-    access_levels = source.get('data_access', [])
-    if not valid_access_levels(access_levels):
-        raise Exception('Invalid access levels')
-    target['data_access'] = access_levels
-
-def assert_can_assign_access_levels(object):
-    if not data_access_levels:
-        return
-
+@access_controller
+def ensure_valid_access_levels(object):
     if object.info.get('data_access'):
-        user_levels = object.info['data_access']
-        if not valid_access_levels(user_levels):
-            raise ValueError(u'Invalid access levels {}'.format(', '.join(user_levels)))
+        access_levels = object.info['data_access']
+        if not valid_access_levels(access_levels):
+            raise ValueError(u'Invalid access levels {}'.format(', '.join(access_levels)))
 
 
-def can_assign_user_to_project_per_access_levels(project):
+@access_controller
+def copy_data_access_levels(target, source):
+    ensure_valid_access_levels(source)
+    target['data_access'] = source['data_access']
+
+
+def ensure_user_assignment_to_project(project):
     from pybossa.cache.users import get_users_access_levels
 
-    if not data_access_levels:
-        return
-
-    # ensure project data access levels are correct
-    if (not project.info.get('data_access') or
-        not valid_access_levels(project.info['data_access'])):
-            raise ValueError(u'Invalid or missing project data access levels')
-
+    ensure_valid_access_levels(project)
     if not project.info.get('project_users'):
         return
 

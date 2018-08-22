@@ -785,8 +785,9 @@ class TestWeb(web.Helper):
         """Test WEB register post JSON creates and sends the confirmation email if
         account validation is enabled"""
         from flask import current_app
+        import app_settings
         current_app.config['ACCOUNT_CONFIRMATION_DISABLED'] = False
-        current_app.config.upref_mdata = False
+        app_settings.upref_mdata = False
         with patch.dict(self.flask_app.config, {'WTF_CSRF_ENABLED': True}):
             self.gig_account_creator_register_signin(with_csrf=True)
             csrf = self.get_csrf('/account/register')
@@ -8498,13 +8499,14 @@ class TestWeb(web.Helper):
     @patch('pybossa.view.account.mail_queue', autospec=True)
     @patch('pybossa.view.account.render_template')
     @patch('pybossa.view.account.signer')
-    def test_register_with_upref_mdata(self, signer, render, queue):
+    @patch('pybossa.view.account.app_settings.upref_mdata.get_upref_mdata_choices')
+    @patch('pybossa.cache.task_browse_helpers.app_settings.upref_mdata')
+    def test_register_with_upref_mdata(self, upref_mdata, get_upref_mdata_choices, signer, render, queue):
         """Test WEB register user with user preferences set"""
         from flask import current_app
-        import pybossa.core
-        current_app.config.upref_mdata = True
 
-        pybossa.core.upref_mdata_choices = dict(languages=[("en", "en"), ("sp", "sp")],
+        upref_data = True
+        get_upref_mdata_choices.return_value = dict(languages=[("en", "en"), ("sp", "sp")],
                                     locations=[("us", "us"), ("uk", "uk")],
                                     timezones=[("", ""), ("ACT", "Australia Central Time")],
                                     user_types=[("Researcher", "Researcher"), ("Analyst", "Analyst")])
@@ -8551,12 +8553,14 @@ class TestWeb(web.Helper):
         assert metadata['review'] == upref_data['review'], "review not updated"
 
     @with_context
-    def test_register_with_invalid_upref_mdata(self):
+    @patch('pybossa.view.account.app_settings.upref_mdata.get_upref_mdata_choices')
+    @patch('pybossa.cache.task_browse_helpers.app_settings.upref_mdata')
+    def test_register_with_invalid_upref_mdata(self, upref_mdata, get_valid_user_preferences):
         """Test WEB register user - invalid user preferences cannot be set"""
         from flask import current_app
-        import pybossa.core
-        current_app.config.upref_mdata = True
-        pybossa.core.upref_mdata_choices = dict(languages=[("en", "en"), ("sp", "sp")],
+
+        upref_mdata = True
+        get_valid_user_preferences.return_value = dict(languages=[("en", "en"), ("sp", "sp")],
                                     locations=[("us", "us"), ("uk", "uk")],
                                     timezones=[("", ""), ("ACT", "Australia Central Time")],
                                     user_types=[("Researcher", "Researcher"), ("Analyst", "Analyst")])

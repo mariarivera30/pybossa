@@ -44,7 +44,7 @@ def _load_config():
         config = _load_module_file_as_dict(config_path)
     upref_mdata_path = os.path.join(os.path.dirname(config_path), 'settings_upref_mdata.py')
     if os.path.exists(upref_mdata_path):
-        upref_mdata = _load_module_file_as_dict(upref_mdata_path)
+        upref_mdata = imp.load_source('upref_mdata', upref_mdata_path)
     else:
         upref_mdata_path = None
     return config, upref_mdata_path, upref_mdata

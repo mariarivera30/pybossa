@@ -51,8 +51,6 @@ from pybossa.cloud_store_api.s3 import s3_upload_file_storage
 from pybossa.uploader import local
 from pybossa.cloud_store_api.s3 import get_file_from_s3, delete_file_from_s3
 
-# dict containing list of valid user preferences
-valid_user_preferences = {}
 
 def last_flashed_message():
     """Return last flashed message by flask."""
@@ -968,16 +966,6 @@ def get_user_pref_db_clause(user_pref):
     sql_strings = ('task.user_pref @> \'{}\''.format(json.dumps(up).lower())
                    for up in user_prefs)
     return ' OR '.join(sql_strings)
-
-
-def get_valid_user_preferences():
-    from pybossa.core import upref_mdata_choices
-
-    if not valid_user_preferences and \
-        current_app.config.upref_mdata:
-            for user_pref, values in upref_mdata_choices.iteritems():
-                valid_user_preferences[user_pref] = [v[0] for v in values]
-    return valid_user_preferences
 
 
 def validate_required_fields(data):

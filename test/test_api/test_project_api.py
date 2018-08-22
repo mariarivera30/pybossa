@@ -1368,7 +1368,7 @@ class TestProjectAPI(TestAPI):
             assert error['action'] == 'POST', error
             assert error['target'] == 'project', error
             assert error['exception_cls'] == 'ValueError', error
-            message = u'Invalid or missing project data access levels'
+            message = u'Invalid access levels {}'.format(', '.join(project_levels))
             assert error['exception_msg'] == message, error
 
     @with_context
@@ -1413,7 +1413,7 @@ class TestProjectAPI(TestAPI):
     def test_project_get_works_with_and_without_data_access(self):
         """Test API project get cannot access project when user is not assigned to the project although user data_access match projects"""
 
-        from pybossa import data_access
+        from pybossa.api.user import data_access
 
         owner = UserFactory.create(admin=True)
         user_l1 = UserFactory.create(info=dict(data_access=['L1']))

@@ -86,10 +86,10 @@ from pybossa.error import ErrorStatus
 from pybossa.syncer import NotEnabled, SyncUnauthorized
 from pybossa.syncer.project_syncer import ProjectSyncer
 from pybossa.exporter.csv_reports_export import ProjectReportCsvExporter
-from pybossa.util import get_valid_user_preferences
 from datetime import datetime
-from pybossa.data_access import (data_access_levels, set_object_data_access_to_form,
-    set_form_data_access_to_object)
+from pybossa.data_access import (data_access_levels, ensure_data_access_assignment_to_form,
+    ensure_data_access_assignment_from_form)
+import app_settings
 
 cors_headers = ['Content-Type', 'Authorization']
 
@@ -599,7 +599,7 @@ def update(short_name):
             new_project.allow_anonymous_contributors = fuzzyboolean(form.allow_anonymous_contributors.data)
             new_project.category_id = form.category_id.data
             new_project.email_notif = form.email_notif.data
-            set_form_data_access_to_object(new_project.info, form)
+            ensure_data_access_assignment_from_form(new_project.info, form)
 
         if form.password.data:
             new_project.set_password(form.password.data)
@@ -637,7 +637,7 @@ def update(short_name):
         if project.category_id is None:
             project.category_id = categories[0].id
         form.populate_obj(project)
-        set_object_data_access_to_form(project.info, form)
+        ensure_data_access_assignment_to_form(project.info, form)
 
     if request.method == 'POST':
         upload_form = AvatarUploadForm()
@@ -1281,7 +1281,8 @@ def tasks_browse(short_name, page=1, records_per_page=10):
                 for col in disp_info_columns:
                     task['info'][col] = task_info.get(col, '')
 
-        valid_user_preferences = get_valid_user_preferences()
+        valid_user_preferences = app_settings.upref_mdata.get_valid_user_preferences() \
+            if app_settings.upref_mdata else {}
         language_options = valid_user_preferences.get('languages')
         location_options = valid_user_preferences.get('locations')
         rdancy_upd_exp = current_app.config.get('REDUNDANCY_UPDATE_EXPIRATION', 30)

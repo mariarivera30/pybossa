@@ -15,6 +15,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with PYBOSSA.  If not, see <http://www.gnu.org/licenses/>.
+from pybossa import data_access
 
 class ProjectAuth(object):
     _specific_actions = ['publish']
@@ -54,11 +55,9 @@ class ProjectAuth(object):
         return self.only_admin_or_subadmin(user)
 
     def _read(self, user, project=None):
-        from pybossa.data_access import data_access_levels
-
         if project is not None and project.published is False:
             return self.only_admin_or_subadminowner(user, project)
-        if project is not None and data_access_levels:
+        if project is not None and data_access.data_access_levels:
             return self.only_admin_or_subadminowner(user, project) or \
                 self.only_project_users(user, project)
         return user.is_authenticated()
